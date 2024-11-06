@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import apiRoute from "./routes/index";
 import { errorHandler, errorNotFound } from "./helpers/handlers";
+import { main } from "./database/db.config";
 
 const app: Express = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // database
+main();
 
 // routes
 app.use("/api", apiRoute);

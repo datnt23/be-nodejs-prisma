@@ -2,6 +2,9 @@ import { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { env, NODE_ENV } from "../config";
 import { NotFoundResponse } from "../core/error.response";
+import path from "path";
+import { format } from "date-fns";
+import { appendFile } from "fs/promises";
 
 export const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
@@ -28,6 +31,8 @@ export const errorHandler: ErrorRequestHandler = (
 ): void => {
   if (!err.status) err.status = StatusCodes.INTERNAL_SERVER_ERROR;
 
+  logHandler(`${req.url} ---- ${req.method} ---- ${err.message}`);
+
   const responseError = {
     code: err.status,
     message: err.message || StatusCodes[err.status],
@@ -37,4 +42,16 @@ export const errorHandler: ErrorRequestHandler = (
   if (NODE_ENV !== env.dev) delete responseError.stack;
 
   res.status(err.status).json(responseError);
+};
+
+const fileName: string = path.join(__dirname, "../logs", "logs.log");
+
+export const logHandler = async (message: string) => {
+  const dateTime: string = `${format(new Date(), "dd-MM-yyyy\tss:mm:HH")}`;
+  const contentLog: string = `${dateTime} --- ${message}\n`;
+  try {
+    await appendFile(fileName, contentLog);
+  } catch (error) {
+    console.error(error);
+  }
 };

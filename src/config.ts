@@ -7,5 +7,4 @@ export const env: any = {
 };
 
 export const PORT: number = Number(process.env.PORT) || env.port;
-
 export const NODE_ENV: string = process.env.NODE_ENV || env.dev;
