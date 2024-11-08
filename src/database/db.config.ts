@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma: PrismaClient = new PrismaClient();
+const prisma: PrismaClient = new PrismaClient({
+  log: ["query"],
+});
 
 async function main() {
   try {

@@ -1,5 +1,5 @@
 import { ErrorRequestHandler, NextFunction, Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { env, NODE_ENV } from "../config";
 import { NotFoundResponse } from "../core/error.response";
 import path from "path";
@@ -34,8 +34,7 @@ export const errorHandler: ErrorRequestHandler = (
   logHandler(`${req.url} ---- ${req.method} ---- ${err.message}`);
 
   const responseError = {
-    code: err.status,
-    message: err.message || StatusCodes[err.status],
+    message: err.message || ReasonPhrases.INTERNAL_SERVER_ERROR,
     stack: err.stack,
   };
 

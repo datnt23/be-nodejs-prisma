@@ -1,11 +1,15 @@
 import { User } from "@prisma/client";
-import { AuthFailureResponse, ConflictResponse } from "../core/error.response";
+import {
+  AuthFailureResponse,
+  ConflictResponse,
+  ForbiddenResponse,
+} from "../core/error.response";
 import { prisma } from "../database/db.config";
 import bcrypt from "bcrypt";
 import crypto from "node:crypto";
-import { roles } from "../auth/constants";
+import { keyRoles } from "../auth/constants";
 import TokenService from "./token.service";
-import { createTokenPair } from "../auth/utils";
+import { generateToken } from "../auth/utils";
 import { format } from "date-fns";
 
 class AuthService {
@@ -30,6 +34,7 @@ class AuthService {
     };
     access_token?: string;
     refresh_token?: string;
+    token_type?: string;
     code?: number;
     data?: null;
   }> => {
@@ -38,14 +43,17 @@ class AuthService {
       where: { email: email },
     });
     if (!foundUser) throw new ConflictResponse("User not registered");
+
     // check password matches
     const passwordMatches = await bcrypt.compare(password, foundUser.password);
     if (!passwordMatches)
       throw new AuthFailureResponse("Password do not match");
+
     // create publicKey and privateKey
     const publicKey = await crypto.randomBytes(64).toString("hex");
     const privateKey = await crypto.randomBytes(64).toString("hex");
-    const { accessToken, refreshToken } = await createTokenPair(
+
+    const tokens = await generateToken(
       {
         userId: foundUser.id,
         email,
@@ -54,10 +62,12 @@ class AuthService {
       publicKey,
       privateKey
     );
+
     const keyToken: string | null = await TokenService.createKeyToken({
       userId: foundUser.id,
-      accessToken,
-      refreshToken,
+      publicKey,
+      privateKey,
+      refreshToken: tokens.refreshToken,
     });
     if (!keyToken) throw new AuthFailureResponse("Key token error");
 
@@ -74,8 +84,9 @@ class AuthService {
         updated_at: format(foundUser.updatedAt, "dd-MM-yyyy ss:mm:HH"),
         // deleted_at: format(newUser.deletedAt, "dd-MM-yyyy ss:mm:HH"),
       },
-      access_token: accessToken,
-      refresh_token: refreshToken,
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      token_type: "Bearer",
     };
   };
 
@@ -106,6 +117,7 @@ class AuthService {
     };
     access_token?: string;
     refresh_token?: string;
+    token_type?: string;
     code?: number;
     data?: null;
   }> => {
@@ -114,6 +126,7 @@ class AuthService {
       where: { email: email },
     });
     if (foundUser) throw new ConflictResponse("User already exists");
+
     // handle get full name
     let getFullName: string = "";
     if (middleName) {
@@ -121,14 +134,16 @@ class AuthService {
     } else {
       getFullName = firstName.concat(" ", lastName);
     }
+
     // hash password
     const hashPassword: string = await bcrypt.hash(password, 10);
+
     // create new user
     const newUser: User = await prisma.user.create({
       data: {
         email: email,
         password: hashPassword,
-        roles: [roles.EMPLOYEE],
+        roles: [keyRoles.EMPLOYEE],
         firstName: firstName,
         middleName: middleName,
         lastName: lastName,
@@ -139,7 +154,8 @@ class AuthService {
     if (newUser) {
       const publicKey = await crypto.randomBytes(64).toString("hex");
       const privateKey = await crypto.randomBytes(64).toString("hex");
-      const { accessToken, refreshToken } = await createTokenPair(
+
+      const tokens = await generateToken(
         {
           userId: newUser.id,
           email,
@@ -148,10 +164,12 @@ class AuthService {
         publicKey,
         privateKey
       );
+
       const keyToken: string | null = await TokenService.createKeyToken({
         userId: newUser.id,
-        accessToken,
-        refreshToken,
+        publicKey,
+        privateKey,
+        refreshToken: tokens.refreshToken,
       });
       if (!keyToken) throw new AuthFailureResponse("Key token error");
 
@@ -168,14 +186,67 @@ class AuthService {
           updated_at: format(newUser.updatedAt, "dd-MM-yyyy ss:mm:HH"),
           // deleted_at: format(newUser.deletedAt, "dd-MM-yyyy ss:mm:HH"),
         },
-        access_token: accessToken,
-        refresh_token: refreshToken,
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken,
+        token_type: "Bearer",
       };
     }
 
     return {
       code: 200,
       data: null,
+    };
+  };
+
+  static logout = async (key: any) => {
+    await TokenService.deleteById(key.id);
+    return {};
+  };
+
+  static refreshToken = async ({
+    refreshToken,
+    user,
+    keyStore,
+  }: {
+    refreshToken: any;
+    user: any;
+    keyStore: any;
+  }) => {
+    const { userId, email, name } = user;
+    console.log(keyStore);
+    console.log(refreshToken);
+    console.log(user);
+    if (keyStore.refreshTokenUsed.includes(refreshToken)) {
+      await TokenService.deleteByUserId(userId);
+      throw new ForbiddenResponse(
+        "something went wrong please try login again"
+      );
+    }
+
+    const tokens = await generateToken(
+      {
+        userId,
+        email,
+        name,
+      },
+      keyStore.publicKey,
+      keyStore.privateKey
+    );
+
+    await TokenService.updateTokenUsedById(
+      keyStore.id,
+      refreshToken,
+      tokens.refreshToken
+    );
+
+    return {
+      user: {
+        id: userId,
+        email: email,
+        full_name: name,
+      },
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
   };
 }

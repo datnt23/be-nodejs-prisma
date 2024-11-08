@@ -3,20 +3,24 @@ import { prisma } from "../database/db.config";
 class TokenService {
   static createKeyToken = async ({
     userId,
-    accessToken,
+    publicKey,
+    privateKey,
     refreshToken,
   }: {
     userId: number;
-    accessToken: string;
+    publicKey: string;
+    privateKey: string;
     refreshToken: string;
   }) => {
     const create = {
         userId: userId,
-        accessToken,
+        publicKey,
+        privateKey,
         refreshToken,
       },
       update = {
-        accessToken,
+        publicKey,
+        privateKey,
         refreshToken,
       },
       where = { userId: userId };
@@ -26,7 +30,39 @@ class TokenService {
       where,
     });
 
-    return token ? token.accessToken : null;
+    return token ? token.publicKey : null;
+  };
+
+  static updateTokenUsedById = async (
+    id: number,
+    refreshToken: string,
+    newRefreshToken: string
+  ) => {
+    return await prisma.token.update({
+      where: {
+        id: id,
+      },
+      data: {
+        refreshToken: newRefreshToken,
+        refreshTokenUsed: { push: refreshToken },
+      },
+    });
+  };
+
+  static findByUserId = async (id: number) => {
+    return await prisma.token.findUnique({ where: { userId: id } });
+  };
+
+  static deleteByUserId = async (userId: number) => {
+    return await prisma.token.delete({
+      where: {
+        userId: userId,
+      },
+    });
+  };
+
+  static deleteById = async (id: number) => {
+    return await prisma.token.delete({ where: { id: id } });
   };
 }
 

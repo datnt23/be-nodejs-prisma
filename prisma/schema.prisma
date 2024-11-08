@@ -26,7 +26,8 @@ model Token {
   id               Int      @id @default(autoincrement())
   user             User     @relation(fields: [userId], references: [id])
   userId           Int      @unique @db.Integer
-  accessToken      String   @db.VarChar(255)
+  publicKey        String   @db.VarChar(255)
+  privateKey       String   @db.VarChar(255)
   refreshToken     String   @db.VarChar(255)
   refreshTokenUsed String[] @default([]) @db.VarChar(255)
   createdAt        DateTime @default(now()) @db.Timestamp()

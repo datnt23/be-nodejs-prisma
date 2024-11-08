@@ -1,18 +1,25 @@
 import { PrismaClient } from "@prisma/client";
-import { roles } from "../src/auth/constants";
+import { keyRoles } from "../src/auth/constants";
 import bcrypt from "bcrypt";
+import {
+  EMAIL_ADMIN,
+  FIRSTNAME_ADMIN,
+  FULLNAME_ADMIN,
+  LASTNAME_ADMIN,
+  PASSWORD_ADMIN,
+} from "../src/config";
 
 const prisma: PrismaClient = new PrismaClient();
 
 async function seeder() {
   const user = await prisma.user.create({
     data: {
-      email: "admin@gmail.com",
-      password: await bcrypt.hash("12345678", 10),
-      roles: [roles.ADMIN],
-      firstName: "Super",
-      lastName: "Admin",
-      fullName: "Super Admin",
+      email: EMAIL_ADMIN,
+      password: await bcrypt.hash(PASSWORD_ADMIN, 10),
+      roles: [keyRoles.ADMIN],
+      firstName: FIRSTNAME_ADMIN,
+      lastName: LASTNAME_ADMIN,
+      fullName: FULLNAME_ADMIN,
     },
   });
   console.log({ user });

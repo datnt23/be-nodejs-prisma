@@ -1,18 +1,53 @@
 import { NextFunction, Request, Response } from "express";
 import { CreatedResponse, SuccessResponse } from "../core/success.response";
 import AuthService from "../services/auth.service";
-
+import { loginSchema, signUpSchema } from "../validations/auth.schema";
+import { StatusCodes } from "http-status-codes";
+import { AuthFailureResponse } from "../core/error.response";
+import { keyHeaders } from "../auth/constants";
 class AuthController {
   login = async (req: Request, res: Response, next: NextFunction) => {
+    const { success, error } = loginSchema.safeParse(req.body);
+    if (!success) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: error.issues[0].message,
+      });
+    }
+
     new SuccessResponse({
-      message: "Đăng nhập thành công!",
+      message: "Log in successfully",
       data: await AuthService.login(req.body),
     }).send(res);
   };
   signUp = async (req: Request, res: Response, next: NextFunction) => {
+    const { success, error } = signUpSchema.safeParse(req.body);
+    if (!success) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: error.issues[0].message,
+      });
+    }
+
     new CreatedResponse({
-      message: "Đăng ký thành công!",
+      message: "Registered successfully",
       data: await AuthService.signUp(req.body),
+    }).send(res);
+  };
+
+  logout = async (req: Request, res: Response, next: NextFunction) => {
+    new SuccessResponse({
+      message: "Log out successfully",
+      data: await AuthService.logout(req.keyStore),
+    }).send(res);
+  };
+
+  refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+    new SuccessResponse({
+      message: "Refresh token successfully",
+      data: await AuthService.refreshToken({
+        refreshToken: req.refreshToken,
+        user: req.user,
+        keyStore: req.keyStore,
+      }),
     }).send(res);
   };
 }

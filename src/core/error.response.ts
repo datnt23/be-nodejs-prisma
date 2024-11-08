@@ -35,5 +35,27 @@ class NotFoundResponse extends ErrorResponse {
     super(message, status);
   }
 }
+class ForbiddenResponse extends ErrorResponse {
+  constructor(
+    message: string = ReasonPhrases.FORBIDDEN,
+    status: number = StatusCodes.FORBIDDEN
+  ) {
+    super(message, status);
+  }
+}
+class GoneResponse extends ErrorResponse {
+  constructor(
+    message: string = ReasonPhrases.GONE,
+    status: number = StatusCodes.GONE
+  ) {
+    super(message, status);
+  }
+}
 
-export { ConflictResponse, AuthFailureResponse, NotFoundResponse };
+export {
+  ConflictResponse,
+  AuthFailureResponse,
+  NotFoundResponse,
+  GoneResponse,
+  ForbiddenResponse,
+};
