@@ -4,6 +4,7 @@ import { AuthFailureResponse, GoneResponse } from "../core/error.response";
 import { keyHeaders } from "./constants";
 import TokenService from "../services/token.service";
 import { extractBearerToken } from "../utils/extract-token-string";
+import UserService from "../services/user.service";
 
 export const generateToken = async (
   payload: object,
@@ -42,6 +43,10 @@ export const isAuthorized = async (
   const userId: number = Number(req.headers[keyHeaders.CLIENT_ID]);
   if (!userId) throw new AuthFailureResponse("Invalid request");
 
+  // get user exists
+  const foundUser = await UserService.findUserById(userId);
+  if (!foundUser) throw new AuthFailureResponse("User not registered");
+
   // get token by user
   const keyStore = await TokenService.findByUserId(userId);
   if (!keyStore) throw new AuthFailureResponse("Token not found");
@@ -56,7 +61,7 @@ export const isAuthorized = async (
         keyStore.privateKey
       );
 
-      if (userId !== refreshTokenDecoded?.userId)
+      if (userId !== refreshTokenDecoded.userId)
         throw new AuthFailureResponse("Invalid user");
 
       req.keyStore = keyStore;

@@ -3,8 +3,6 @@ import { CreatedResponse, SuccessResponse } from "../core/success.response";
 import AuthService from "../services/auth.service";
 import { loginSchema, signUpSchema } from "../validations/auth.schema";
 import { StatusCodes } from "http-status-codes";
-import { AuthFailureResponse } from "../core/error.response";
-import { keyHeaders } from "../auth/constants";
 class AuthController {
   login = async (req: Request, res: Response, next: NextFunction) => {
     const { success, error } = loginSchema.safeParse(req.body);
@@ -19,7 +17,7 @@ class AuthController {
       data: await AuthService.login(req.body),
     }).send(res);
   };
-  signUp = async (req: Request, res: Response, next: NextFunction) => {
+  register = async (req: Request, res: Response, next: NextFunction) => {
     const { success, error } = signUpSchema.safeParse(req.body);
     if (!success) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -29,7 +27,15 @@ class AuthController {
 
     new CreatedResponse({
       message: "Registered successfully",
-      data: await AuthService.signUp(req.body),
+      data: await AuthService.register(req.body),
+    }).send(res);
+  };
+
+  getMe = async (req: Request, res: Response, next: NextFunction) => {
+    new SuccessResponse({
+      data: await AuthService.me({
+        user: req.user,
+      }),
     }).send(res);
   };
 

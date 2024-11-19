@@ -8,18 +8,17 @@ datasource db {
 }
 
 model User {
-  id         Int       @id @default(autoincrement()) @db.Integer
-  email      String    @unique @db.VarChar(255)
-  password   String    @db.VarChar(255)
-  roles      String[]  @default([]) @db.VarChar(255)
-  firstName  String    @db.VarChar(255)
-  middleName String?   @db.VarChar(255)
-  lastName   String    @db.VarChar(255)
-  fullName   String    @db.VarChar(255)
-  createdAt  DateTime  @default(now()) @db.Timestamp()
-  updatedAt  DateTime  @updatedAt @db.Timestamp()
-  deletedAt  DateTime?
-  Token      Token[]
+  id        Int       @id @default(autoincrement()) @db.Integer
+  email     String    @unique @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  roles     String[]  @default([]) @db.VarChar(255)
+  firstName String    @db.VarChar(255)
+  lastName  String    @db.VarChar(255)
+  fullName  String    @db.VarChar(255)
+  createdAt DateTime  @default(now()) @db.Timestamp()
+  updatedAt DateTime  @updatedAt @db.Timestamp()
+  deletedAt DateTime?
+  Token     Token[]
 }
 
 model Token {
