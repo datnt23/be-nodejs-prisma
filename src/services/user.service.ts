@@ -16,6 +16,7 @@ class UserService {
     firstName,
     lastName,
     fullName,
+    displayName,
   }: {
     email: string;
     password: string;
@@ -23,6 +24,7 @@ class UserService {
     firstName: string;
     lastName: string;
     fullName: string;
+    displayName: string;
   }) => {
     return await prisma.user.create({
       data: {
@@ -32,6 +34,7 @@ class UserService {
         firstName,
         lastName,
         fullName,
+        displayName,
       },
     });
   };

@@ -26,6 +26,7 @@ class AuthService {
       first_name: string;
       last_name: string;
       full_name: string;
+      display_name: string;
       roles: string[];
       created_at: string;
       updated_at: string;
@@ -43,8 +44,7 @@ class AuthService {
 
     // check password matches
     const passwordMatches = await bcrypt.compare(password, foundUser.password);
-    if (!passwordMatches)
-      throw new AuthFailureResponse("Password do not match");
+    if (!passwordMatches) throw new AuthFailureResponse("Password is wrong");
 
     // create publicKey and privateKey
     const publicKey = await crypto.randomBytes(64).toString("hex");
@@ -75,6 +75,7 @@ class AuthService {
         first_name: foundUser.firstName,
         last_name: foundUser.lastName,
         full_name: foundUser.fullName,
+        display_name: foundUser.displayName,
         roles: foundUser.roles,
         created_at: format(foundUser.createdAt, "dd-MM-yyyy ss:mm:HH"),
         updated_at: format(foundUser.updatedAt, "dd-MM-yyyy ss:mm:HH"),
@@ -103,6 +104,7 @@ class AuthService {
       first_name: string;
       last_name: string;
       full_name: string;
+      display_name: string;
       roles: string[];
       created_at: string;
       updated_at: string;
@@ -132,6 +134,7 @@ class AuthService {
       firstName,
       lastName,
       fullName: getFullName,
+      displayName: lastName,
     });
 
     if (newUser) {
@@ -163,6 +166,7 @@ class AuthService {
           first_name: newUser.firstName,
           last_name: newUser.lastName,
           full_name: newUser.fullName,
+          display_name: newUser.displayName,
           roles: newUser.roles,
           created_at: format(newUser.createdAt, "dd-MM-yyyy ss:mm:HH"),
           updated_at: format(newUser.updatedAt, "dd-MM-yyyy ss:mm:HH"),
@@ -189,6 +193,7 @@ class AuthService {
       first_name: userInfo.firstName,
       last_name: userInfo.lastName,
       full_name: userInfo.fullName,
+      display_name: userInfo.displayName,
       roles: userInfo.roles,
       created_at: format(userInfo.createdAt, "dd-MM-yyyy ss:mm:HH"),
       updated_at: format(userInfo.updatedAt, "dd-MM-yyyy ss:mm:HH"),

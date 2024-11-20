@@ -20,6 +20,7 @@ async function seeder() {
       firstName: FIRSTNAME_ADMIN,
       lastName: LASTNAME_ADMIN,
       fullName: FULLNAME_ADMIN,
+      displayName: LASTNAME_ADMIN,
     },
   });
   console.log({ user });
