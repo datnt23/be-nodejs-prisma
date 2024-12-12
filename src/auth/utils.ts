@@ -39,15 +39,15 @@ export const isAuthorized = async (
   res: Response,
   next: NextFunction
 ) => {
-  // check for client missing
+  //? check for client missing?
   const userId: number = Number(req.headers[keyHeaders.CLIENT_ID]);
   if (!userId) throw new AuthFailureResponse("Invalid request");
 
-  // get user exists
+  //* get user exists
   const foundUser = await UserService.findUserById(userId);
   if (!foundUser) throw new AuthFailureResponse("User not registered");
 
-  // get token by user
+  //* get token by user
   const keyStore = await TokenService.findByUserId(userId);
   if (!keyStore) throw new AuthFailureResponse("Token not found");
 

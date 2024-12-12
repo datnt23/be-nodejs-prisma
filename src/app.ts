@@ -9,21 +9,21 @@ import { main } from "./database/db.config";
 
 const app: Express = express();
 
-// middleware
-app.use(morgan("dev")); // use for development
+//* middleware
+app.use(morgan("dev")); //TODO: use for development
 app.use(helmet());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-// database
+//* database
 main();
 
-// routes
+//* routes
 app.use("/api", apiRoute);
 
-// handling error
+//* handling error
 app.use(errorNotFound);
 app.use(errorHandler);
 

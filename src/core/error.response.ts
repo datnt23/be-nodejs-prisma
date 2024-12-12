@@ -1,5 +1,6 @@
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 
+//! Error response
 class ErrorResponse extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -9,6 +10,7 @@ class ErrorResponse extends Error {
   }
 }
 
+//! Conflict response
 class ConflictResponse extends ErrorResponse {
   constructor(
     message: string = ReasonPhrases.CONFLICT,
@@ -18,6 +20,7 @@ class ConflictResponse extends ErrorResponse {
   }
 }
 
+//! Auth failure response
 class AuthFailureResponse extends ErrorResponse {
   constructor(
     message: string = ReasonPhrases.UNAUTHORIZED,
@@ -27,6 +30,7 @@ class AuthFailureResponse extends ErrorResponse {
   }
 }
 
+//! Not found response
 class NotFoundResponse extends ErrorResponse {
   constructor(
     message: string = ReasonPhrases.NOT_FOUND,
@@ -35,6 +39,8 @@ class NotFoundResponse extends ErrorResponse {
     super(message, status);
   }
 }
+
+//! Forbidden response
 class ForbiddenResponse extends ErrorResponse {
   constructor(
     message: string = ReasonPhrases.FORBIDDEN,
@@ -43,6 +49,8 @@ class ForbiddenResponse extends ErrorResponse {
     super(message, status);
   }
 }
+
+//! Gone response
 class GoneResponse extends ErrorResponse {
   constructor(
     message: string = ReasonPhrases.GONE,

@@ -38,15 +38,15 @@ class AuthService {
     code?: number;
     data?: null;
   }> => {
-    // check email is exists
+    //? check email is exists?
     const foundUser: User | null = await UserService.findUserByEmail(email);
     if (!foundUser) throw new ConflictResponse("User not registered");
 
-    // check password matches
+    //? check password matches?
     const passwordMatches = await bcrypt.compare(password, foundUser.password);
     if (!passwordMatches) throw new AuthFailureResponse("Password is wrong");
 
-    // create publicKey and privateKey
+    //* create publicKey and privateKey
     const publicKey = await crypto.randomBytes(64).toString("hex");
     const privateKey = await crypto.randomBytes(64).toString("hex");
 
@@ -116,17 +116,17 @@ class AuthService {
     code?: number;
     data?: null;
   }> => {
-    // check email is exists
+    //? check email is exists?
     const foundUser: User | null = await UserService.findUserByEmail(email);
     if (foundUser) throw new ConflictResponse("User already exists");
 
-    // handle get full name
+    //* handle get full name
     let getFullName: string = firstName.concat(" ", lastName);
 
-    // hash password
+    //* hash password
     const hashPassword: string = await bcrypt.hash(password, 10);
 
-    // create new user
+    //* create new user
     const newUser: User = await UserService.createNewUser({
       email,
       password: hashPassword,

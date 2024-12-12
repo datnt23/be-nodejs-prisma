@@ -12,7 +12,7 @@ import {
 const prisma: PrismaClient = new PrismaClient();
 
 async function seeder() {
-  const user = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: EMAIL_ADMIN,
       password: await bcrypt.hash(PASSWORD_ADMIN, 10),
@@ -23,7 +23,6 @@ async function seeder() {
       displayName: LASTNAME_ADMIN,
     },
   });
-  console.log({ user });
 }
 
 seeder()
