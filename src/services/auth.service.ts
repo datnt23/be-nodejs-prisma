@@ -1,25 +1,25 @@
+import { Response } from "express";
 import { User } from "@prisma/client";
-import {
-  AuthFailureResponse,
-  ConflictResponse,
-  ForbiddenResponse,
-} from "../core/error.response";
+import ms from "ms";
+import { AuthFailureResponse, ConflictResponse } from "../core/error.response";
 import bcrypt from "bcrypt";
-import crypto from "node:crypto";
 import { keyRoles } from "../auth/constants";
-import TokenService from "./token.service";
 import { generateToken } from "../auth/utils";
 import { format } from "date-fns";
 import UserService from "./user.service";
+import { KEY_ACCESS_TOKEN, KEY_REFRESH_TOKEN } from "../config";
 
 class AuthService {
-  static login = async ({
-    email,
-    password,
-  }: {
-    email: string;
-    password: string;
-  }): Promise<{
+  static login = async (
+    {
+      email,
+      password,
+    }: {
+      email: string;
+      password: string;
+    },
+    res: Response
+  ): Promise<{
     user?: {
       id: number;
       email: string;
@@ -34,7 +34,6 @@ class AuthService {
     };
     access_token?: string;
     refresh_token?: string;
-    token_type?: string;
     code?: number;
     data?: null;
   }> => {
@@ -46,27 +45,34 @@ class AuthService {
     const passwordMatches = await bcrypt.compare(password, foundUser.password);
     if (!passwordMatches) throw new AuthFailureResponse("Password is wrong");
 
-    //* create publicKey and privateKey
-    const publicKey = await crypto.randomBytes(64).toString("hex");
-    const privateKey = await crypto.randomBytes(64).toString("hex");
-
-    const tokens = await generateToken(
+    const accessToken = await generateToken(
       {
         userId: foundUser.id,
         email,
         name: foundUser.fullName,
       },
-      publicKey,
-      privateKey
+      KEY_ACCESS_TOKEN,
+      100
+      // "2 days"
     );
 
-    const keyToken: string | null = await TokenService.createKeyToken({
-      userId: foundUser.id,
-      publicKey,
-      privateKey,
-      refreshToken: tokens.refreshToken,
+    const refreshToken = await generateToken(
+      {
+        userId: foundUser.id,
+        email,
+        name: foundUser.fullName,
+      },
+      KEY_REFRESH_TOKEN,
+      "7 days"
+    );
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      // secure: process.env.NODE_ENV === "production", // Chỉ gửi cookie qua HTTPS trong môi trường production
+      maxAge: ms("7 days"),
     });
-    if (!keyToken) throw new AuthFailureResponse("Key token error");
 
     return {
       user: {
@@ -81,23 +87,25 @@ class AuthService {
         updated_at: format(foundUser.updatedAt, "dd-MM-yyyy ss:mm:HH"),
         // deleted_at: format(foundUser.deletedAt, "dd-MM-yyyy ss:mm:HH"),
       },
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-      token_type: "Bearer",
+      access_token: accessToken,
+      // refresh_token: refreshToken,
     };
   };
 
-  static register = async ({
-    email,
-    password,
-    firstName,
-    lastName,
-  }: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }): Promise<{
+  static register = async (
+    {
+      email,
+      password,
+      firstName,
+      lastName,
+    }: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    },
+    res: Response
+  ): Promise<{
     user?: {
       id: number;
       email: string;
@@ -112,7 +120,6 @@ class AuthService {
     };
     access_token?: string;
     refresh_token?: string;
-    token_type?: string;
     code?: number;
     data?: null;
   }> => {
@@ -138,26 +145,33 @@ class AuthService {
     });
 
     if (newUser) {
-      const publicKey = await crypto.randomBytes(64).toString("hex");
-      const privateKey = await crypto.randomBytes(64).toString("hex");
-
-      const tokens = await generateToken(
+      const accessToken = await generateToken(
         {
           userId: newUser.id,
           email,
           name: newUser.fullName,
         },
-        publicKey,
-        privateKey
+        KEY_ACCESS_TOKEN,
+        "2 days"
       );
 
-      const keyToken: string | null = await TokenService.createKeyToken({
-        userId: newUser.id,
-        publicKey,
-        privateKey,
-        refreshToken: tokens.refreshToken,
+      const refreshToken = await generateToken(
+        {
+          userId: newUser.id,
+          email,
+          name: newUser.fullName,
+        },
+        KEY_REFRESH_TOKEN,
+        "7 days"
+      );
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        // secure: process.env.NODE_ENV === "production", // Chỉ gửi cookie qua HTTPS trong môi trường production
+        maxAge: ms("7 days"),
       });
-      if (!keyToken) throw new AuthFailureResponse("Key token error");
 
       return {
         user: {
@@ -172,9 +186,8 @@ class AuthService {
           updated_at: format(newUser.updatedAt, "dd-MM-yyyy ss:mm:HH"),
           // deleted_at: format(newUser.deletedAt, "dd-MM-yyyy ss:mm:HH"),
         },
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        token_type: "Bearer",
+        access_token: accessToken,
+        // refresh_token: refreshToken,
       };
     }
 
@@ -184,70 +197,61 @@ class AuthService {
     };
   };
 
-  static me = async ({ user }: { user: any }) => {
+  static me = async ({
+    user,
+  }: {
+    user: any;
+  }): Promise<{
+    user?: {
+      id: number;
+      email: string;
+      first_name: string;
+      last_name: string;
+      full_name: string;
+      display_name: string;
+      roles: string[];
+      created_at: string;
+      updated_at: string;
+      // deleted_at: string,
+    };
+  }> => {
     const userInfo: any = await UserService.findUserById(user.id);
 
     return {
-      id: userInfo.id,
-      email: userInfo.email,
-      first_name: userInfo.firstName,
-      last_name: userInfo.lastName,
-      full_name: userInfo.fullName,
-      display_name: userInfo.displayName,
-      roles: userInfo.roles,
-      created_at: format(userInfo.createdAt, "dd-MM-yyyy ss:mm:HH"),
-      updated_at: format(userInfo.updatedAt, "dd-MM-yyyy ss:mm:HH"),
-      // deleted_at: format(userInfo.deletedAt, "dd-MM-yyyy ss:mm:HH"),
+      user: {
+        id: userInfo.id,
+        email: userInfo.email,
+        first_name: userInfo.firstName,
+        last_name: userInfo.lastName,
+        full_name: userInfo.fullName,
+        display_name: userInfo.displayName,
+        roles: userInfo.roles,
+        created_at: format(userInfo.createdAt, "dd-MM-yyyy ss:mm:HH"),
+        updated_at: format(userInfo.updatedAt, "dd-MM-yyyy ss:mm:HH"),
+        // deleted_at: format(userInfo.deletedAt, "dd-MM-yyyy ss:mm:HH"),
+      },
     };
   };
 
-  static logout = async (key: any) => {
-    await TokenService.deleteById(key.id);
+  static logout = async () => {
     return {};
   };
 
-  static refreshToken = async ({
-    refreshToken,
-    user,
-    keyStore,
-  }: {
-    refreshToken: any;
-    user: any;
-    keyStore: any;
-  }) => {
+  static refreshToken = async ({ user }: { user: any }) => {
     const { userId, email, name } = user;
 
-    if (keyStore.refreshTokenUsed.includes(refreshToken)) {
-      await TokenService.deleteByUserId(userId);
-      throw new ForbiddenResponse(
-        "Something went wrong please try login again"
-      );
-    }
-
-    const tokens = await generateToken(
+    const accessToken = await generateToken(
       {
         userId,
         email,
         name,
       },
-      keyStore.publicKey,
-      keyStore.privateKey
-    );
-
-    await TokenService.updateTokenUsedById(
-      keyStore.id,
-      refreshToken,
-      tokens.refreshToken
+      KEY_ACCESS_TOKEN,
+      "2 days"
     );
 
     return {
-      user: {
-        id: userId,
-        email: email,
-        full_name: name,
-      },
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
+      accessToken: accessToken,
     };
   };
 }

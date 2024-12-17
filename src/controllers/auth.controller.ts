@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { CreatedResponse, SuccessResponse } from "../core/success.response";
 import AuthService from "../services/auth.service";
-import { loginSchema, signUpSchema } from "../validations/auth.schema";
+import { loginSchema, registerSchema } from "../validations/auth.schema";
 import { StatusCodes } from "http-status-codes";
 class AuthController {
   login = async (req: Request, res: Response, next: NextFunction) => {
@@ -14,11 +14,11 @@ class AuthController {
 
     new SuccessResponse({
       message: "Log in successfully",
-      data: await AuthService.login(req.body),
+      data: await AuthService.login(req.body, res),
     }).send(res);
   };
   register = async (req: Request, res: Response, next: NextFunction) => {
-    const { success, error } = signUpSchema.safeParse(req.body);
+    const { success, error } = registerSchema.safeParse(req.body);
     if (!success) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: error.issues[0].message,
@@ -27,7 +27,7 @@ class AuthController {
 
     new CreatedResponse({
       message: "Registered successfully",
-      data: await AuthService.register(req.body),
+      data: await AuthService.register(req.body, res),
     }).send(res);
   };
 
@@ -42,7 +42,7 @@ class AuthController {
   logout = async (req: Request, res: Response, next: NextFunction) => {
     new SuccessResponse({
       message: "Log out successfully",
-      data: await AuthService.logout(req.keyStore),
+      data: await AuthService.logout(),
     }).send(res);
   };
 
@@ -50,9 +50,7 @@ class AuthController {
     new SuccessResponse({
       message: "Refresh token successfully",
       data: await AuthService.refreshToken({
-        refreshToken: req.refreshToken,
         user: req.user,
-        keyStore: req.keyStore,
       }),
     }).send(res);
   };

@@ -2,24 +2,19 @@ import { NextFunction, Request, Response } from "express";
 import JWT from "jsonwebtoken";
 import { AuthFailureResponse, GoneResponse } from "../core/error.response";
 import { keyHeaders } from "./constants";
-import TokenService from "../services/token.service";
 import { extractBearerToken } from "../utils/extract-token-string";
-import UserService from "../services/user.service";
+import { KEY_ACCESS_TOKEN, KEY_REFRESH_TOKEN } from "../config";
 
 export const generateToken = async (
   payload: object,
-  publicKey: string,
-  privateKey: string
-): Promise<{ accessToken: string; refreshToken: string }> => {
-  const accessToken: string = await JWT.sign(payload, publicKey, {
-    expiresIn: "2 days",
+  secretKey: string,
+  expiresIn: string | number
+): Promise<string> => {
+  const token: string = await JWT.sign(payload, secretKey, {
+    expiresIn,
   });
 
-  const refreshToken: string = await JWT.sign(payload, privateKey, {
-    expiresIn: "7 days",
-  });
-
-  return { accessToken, refreshToken };
+  return token;
 };
 
 export const verifyJWT = async (token: string, keySecret: string) => {
@@ -39,34 +34,18 @@ export const isAuthorized = async (
   res: Response,
   next: NextFunction
 ) => {
-  //? check for client missing?
-  const userId: number = Number(req.headers[keyHeaders.CLIENT_ID]);
-  if (!userId) throw new AuthFailureResponse("Invalid request");
-
-  //* get user exists
-  const foundUser = await UserService.findUserById(userId);
-  if (!foundUser) throw new AuthFailureResponse("User not registered");
-
-  //* get token by user
-  const keyStore = await TokenService.findByUserId(userId);
-  if (!keyStore) throw new AuthFailureResponse("Token not found");
-
   const refreshTokenBearerId: string | undefined =
     req.headers[keyHeaders.REFRESH_TOKEN_ID]?.toString();
+
   if (refreshTokenBearerId) {
     try {
       const refreshToken = await extractBearerToken(refreshTokenBearerId);
       const refreshTokenDecoded: any = await verifyJWT(
         refreshToken,
-        keyStore.privateKey
+        KEY_REFRESH_TOKEN
       );
 
-      if (userId !== refreshTokenDecoded.userId)
-        throw new AuthFailureResponse("Invalid user");
-
-      req.keyStore = keyStore;
       req.user = refreshTokenDecoded;
-      req.refreshToken = refreshToken;
 
       return next();
     } catch (error) {
@@ -81,12 +60,9 @@ export const isAuthorized = async (
   try {
     const accessTokenDecoded: any = await verifyJWT(
       await extractBearerToken(accessToken),
-      keyStore.publicKey
+      KEY_ACCESS_TOKEN
     );
-    if (userId !== accessTokenDecoded.userId)
-      throw new AuthFailureResponse("Invalid user");
 
-    req.keyStore = keyStore;
     req.user = accessTokenDecoded;
 
     return next();

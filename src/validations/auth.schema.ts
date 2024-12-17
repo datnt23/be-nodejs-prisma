@@ -9,7 +9,7 @@ const loginSchema = z.object({
     .min(6, "Password must have at least 6 characters"),
 });
 
-const signUpSchema = z
+const registerSchema = z
   .object({
     email: z.string({ message: "Email is required" }).email("Invalid email"),
     password: z
@@ -24,11 +24,11 @@ const signUpSchema = z
     confirmPassword: z
       .string({ message: "Confirm password is required" })
       .min(6, "Confirm password must have at least 6 characters")
-      .regex(/[A-Z]/, "Password must contain an uppercase letter")
-      .regex(/[0-9]/, "Password must contain a number")
+      .regex(/[A-Z]/, "Confirm password must contain an uppercase letter")
+      .regex(/[0-9]/, "Confirm password must contain a number")
       .regex(
         /[!@#$%^&*(),.?":{}|<>]/,
-        "Password must contain special characters"
+        "Confirm password must contain special characters"
       ),
     firstName: z
       .string({ message: "First name is required" })
@@ -42,4 +42,4 @@ const signUpSchema = z
     path: ["confirmPassword"],
   });
 
-export { loginSchema, signUpSchema };
+export { loginSchema, registerSchema };

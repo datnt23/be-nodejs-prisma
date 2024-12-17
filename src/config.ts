@@ -7,6 +7,8 @@ export const env: any = {
 };
 
 export const PORT: number = Number(process.env.PORT) || env.port;
+export const KEY_ACCESS_TOKEN: string = process.env.ACCESS_TOKEN_SECRET || "";
+export const KEY_REFRESH_TOKEN: string = process.env.REFRESH_TOKEN_SECRET || "";
 export const NODE_ENV: string = process.env.NODE_ENV || env.dev;
 export const EMAIL_ADMIN: string = process.env.EMAIL_ADMIN || "admin@gmail.com";
 export const PASSWORD_ADMIN: string = process.env.PASSWORD_ADMIN || "password";
