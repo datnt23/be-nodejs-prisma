@@ -1,25 +1,20 @@
-import { Response } from "express";
 import { User } from "@prisma/client";
-import ms from "ms";
 import { AuthFailureResponse, ConflictResponse } from "../core/error.response";
 import bcrypt from "bcrypt";
 import { keyRoles } from "../auth/constants";
 import { generateToken } from "../auth/utils";
 import { format } from "date-fns";
 import UserService from "./user.service";
-import { KEY_ACCESS_TOKEN, KEY_REFRESH_TOKEN } from "../config";
+import { KEY_ACCESS_TOKEN, KEY_REFRESH_TOKEN, TOKEN_TYPE } from "../config";
 
 class AuthService {
-  static login = async (
-    {
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    },
-    res: Response
-  ): Promise<{
+  static login = async ({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }): Promise<{
     user?: {
       id: number;
       email: string;
@@ -34,6 +29,7 @@ class AuthService {
     };
     access_token?: string;
     refresh_token?: string;
+    token_type?: string;
     code?: number;
     data?: null;
   }> => {
@@ -52,8 +48,7 @@ class AuthService {
         name: foundUser.fullName,
       },
       KEY_ACCESS_TOKEN,
-      100
-      // "2 days"
+      "2 days"
     );
 
     const refreshToken = await generateToken(
@@ -65,14 +60,6 @@ class AuthService {
       KEY_REFRESH_TOKEN,
       "7 days"
     );
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      // secure: process.env.NODE_ENV === "production", // Chỉ gửi cookie qua HTTPS trong môi trường production
-      maxAge: ms("7 days"),
-    });
 
     return {
       user: {
@@ -88,24 +75,22 @@ class AuthService {
         // deleted_at: format(foundUser.deletedAt, "dd-MM-yyyy ss:mm:HH"),
       },
       access_token: accessToken,
-      // refresh_token: refreshToken,
+      refresh_token: refreshToken,
+      token_type: TOKEN_TYPE,
     };
   };
 
-  static register = async (
-    {
-      email,
-      password,
-      firstName,
-      lastName,
-    }: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
-    },
-    res: Response
-  ): Promise<{
+  static register = async ({
+    email,
+    password,
+    firstName,
+    lastName,
+  }: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<{
     user?: {
       id: number;
       email: string;
@@ -120,6 +105,7 @@ class AuthService {
     };
     access_token?: string;
     refresh_token?: string;
+    token_type?: string;
     code?: number;
     data?: null;
   }> => {
@@ -165,14 +151,6 @@ class AuthService {
         "7 days"
       );
 
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        // secure: process.env.NODE_ENV === "production", // Chỉ gửi cookie qua HTTPS trong môi trường production
-        maxAge: ms("7 days"),
-      });
-
       return {
         user: {
           id: newUser.id,
@@ -187,7 +165,8 @@ class AuthService {
           // deleted_at: format(newUser.deletedAt, "dd-MM-yyyy ss:mm:HH"),
         },
         access_token: accessToken,
-        // refresh_token: refreshToken,
+        refresh_token: refreshToken,
+        token_type: TOKEN_TYPE,
       };
     }
 
@@ -215,20 +194,18 @@ class AuthService {
       // deleted_at: string,
     };
   }> => {
-    const userInfo: any = await UserService.findUserById(user.id);
-
     return {
       user: {
-        id: userInfo.id,
-        email: userInfo.email,
-        first_name: userInfo.firstName,
-        last_name: userInfo.lastName,
-        full_name: userInfo.fullName,
-        display_name: userInfo.displayName,
-        roles: userInfo.roles,
-        created_at: format(userInfo.createdAt, "dd-MM-yyyy ss:mm:HH"),
-        updated_at: format(userInfo.updatedAt, "dd-MM-yyyy ss:mm:HH"),
-        // deleted_at: format(userInfo.deletedAt, "dd-MM-yyyy ss:mm:HH"),
+        id: user.id,
+        email: user.email,
+        first_name: user.firstName,
+        last_name: user.lastName,
+        full_name: user.fullName,
+        display_name: user.displayName,
+        roles: user.roles,
+        created_at: format(user.createdAt, "dd-MM-yyyy ss:mm:HH"),
+        updated_at: format(user.updatedAt, "dd-MM-yyyy ss:mm:HH"),
+        // deleted_at: format(user.deletedAt, "dd-MM-yyyy ss:mm:HH"),
       },
     };
   };
@@ -237,7 +214,12 @@ class AuthService {
     return {};
   };
 
-  static refreshToken = async ({ user }: { user: any }) => {
+  static refreshToken = async (
+    user: any
+  ): Promise<{
+    access_token?: string;
+    token_type?: string;
+  }> => {
     const { userId, email, name } = user;
 
     const accessToken = await generateToken(
@@ -251,7 +233,8 @@ class AuthService {
     );
 
     return {
-      accessToken: accessToken,
+      access_token: accessToken,
+      token_type: TOKEN_TYPE,
     };
   };
 }

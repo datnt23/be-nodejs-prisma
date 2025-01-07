@@ -14,7 +14,7 @@ class AuthController {
 
     new SuccessResponse({
       message: "Log in successfully",
-      data: await AuthService.login(req.body, res),
+      data: await AuthService.login(req.body),
     }).send(res);
   };
   register = async (req: Request, res: Response, next: NextFunction) => {
@@ -27,7 +27,7 @@ class AuthController {
 
     new CreatedResponse({
       message: "Registered successfully",
-      data: await AuthService.register(req.body, res),
+      data: await AuthService.register(req.body),
     }).send(res);
   };
 

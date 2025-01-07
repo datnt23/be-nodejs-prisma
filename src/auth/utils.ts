@@ -1,9 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import JWT from "jsonwebtoken";
-import { AuthFailureResponse, GoneResponse } from "../core/error.response";
-import { keyHeaders } from "./constants";
+import {
+  AuthFailureResponse,
+  ConflictResponse,
+  ForbiddenResponse,
+  GoneResponse,
+} from "../core/error.response";
 import { extractBearerToken } from "../utils/extract-token-string";
 import { KEY_ACCESS_TOKEN, KEY_REFRESH_TOKEN } from "../config";
+import { keyHeaders } from "./constants";
+import { prisma } from "../database/db.config";
+import UserService from "../services/user.service";
 
 export const generateToken = async (
   payload: object,
@@ -18,15 +25,23 @@ export const generateToken = async (
 };
 
 export const verifyJWT = async (token: string, keySecret: string) => {
-  return await JWT.verify(token, keySecret, (err, decode) => {
-    if (err) {
-      console.error(`Error verify::`, err.message);
-      throw new AuthFailureResponse("Invalid token");
-    } else {
-      console.log(`Decode verify::`, decode);
-      return decode;
-    }
+  try {
+    return await JWT.verify(token, keySecret);
+  } catch (error) {
+    throw new Error(error as string);
+  }
+};
+
+const checkUserExist = async (userId: number) => {
+  const user = await UserService.findUserById({
+    id: userId,
   });
+
+  if (!user) {
+    throw new ConflictResponse("User does not exist");
+  }
+
+  return user;
 };
 
 export const isAuthorized = async (
@@ -40,16 +55,21 @@ export const isAuthorized = async (
   if (refreshTokenBearerId) {
     try {
       const refreshToken = await extractBearerToken(refreshTokenBearerId);
+
       const refreshTokenDecoded: any = await verifyJWT(
         refreshToken,
         KEY_REFRESH_TOKEN
       );
 
-      req.user = refreshTokenDecoded;
+      const checkUser = await checkUserExist(refreshTokenDecoded.userId);
+
+      req.user = checkUser;
 
       return next();
-    } catch (error) {
-      throw error;
+    } catch (err) {
+      if ((err as Error).message?.includes("jwt expired")) {
+        throw new AuthFailureResponse("Please login");
+      }
     }
   }
 
@@ -63,7 +83,9 @@ export const isAuthorized = async (
       KEY_ACCESS_TOKEN
     );
 
-    req.user = accessTokenDecoded;
+    const checkUser = await checkUserExist(accessTokenDecoded.userId);
+
+    req.user = checkUser;
 
     return next();
   } catch (error) {
@@ -73,4 +95,22 @@ export const isAuthorized = async (
 
     throw new AuthFailureResponse("Please login");
   }
+};
+
+export const permission = (permission: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user?.roles) {
+      throw new ForbiddenResponse("Permission Denied!");
+    }
+
+    const validPermission = permission.some((role) =>
+      req.user?.roles.includes(role)
+    );
+
+    if (!validPermission) {
+      throw new ForbiddenResponse("You haven't access to this route!");
+    }
+
+    return next();
+  };
 };
