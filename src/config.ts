@@ -9,7 +9,11 @@ export const env: any = {
 export const PORT: number = Number(process.env.PORT) || env.port;
 export const TOKEN_TYPE: string = process.env.TOKEN_TYPE || "Bearer";
 export const KEY_ACCESS_TOKEN: string = process.env.ACCESS_TOKEN_SECRET || "";
+export const EXPIRES_IN_ACCESS_TOKEN: string =
+  process.env.JWT_EXPIRES_IN_ACCESS_TOKEN || "2 days";
 export const KEY_REFRESH_TOKEN: string = process.env.REFRESH_TOKEN_SECRET || "";
+export const EXPIRES_IN_REFRESH_TOKEN: string =
+  process.env.JWT_JWT_EXPIRES_IN_REFRESH_TOKEN || "7 days";
 export const NODE_ENV: string = process.env.NODE_ENV || env.dev;
 
 // Admin

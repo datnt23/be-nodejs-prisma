@@ -1,6 +1,6 @@
 # API Back-End Ecommerce NodeJs
 
-- Programming language: Javascript
+- Programming language: Typescript
 - Database: Postgresql
 - ORM: Prisma
 - Server: NodeJs, ExpressJS
@@ -20,4 +20,4 @@
 - Step 3: Then follow up by executing the `ImportData_vn_units.sql` to import data to these generated tables.
 
 - If run this command: npx prisma migrate dev --name initial
-=> So just do step 1 and 3.
+  => So just do step 1 and 3.

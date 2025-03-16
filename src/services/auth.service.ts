@@ -5,7 +5,13 @@ import { keyRoles } from "../auth/constants";
 import { generateToken } from "../auth/utils";
 import { format } from "date-fns";
 import UserService from "./user.service";
-import { KEY_ACCESS_TOKEN, KEY_REFRESH_TOKEN, TOKEN_TYPE } from "../config";
+import {
+  KEY_ACCESS_TOKEN,
+  KEY_REFRESH_TOKEN,
+  TOKEN_TYPE,
+  EXPIRES_IN_ACCESS_TOKEN,
+  EXPIRES_IN_REFRESH_TOKEN,
+} from "../config";
 
 class AuthService {
   static login = async ({
@@ -48,7 +54,7 @@ class AuthService {
         name: foundUser.fullName,
       },
       KEY_ACCESS_TOKEN,
-      "2 days"
+      EXPIRES_IN_ACCESS_TOKEN
     );
 
     const refreshToken = await generateToken(
@@ -58,7 +64,7 @@ class AuthService {
         name: foundUser.fullName,
       },
       KEY_REFRESH_TOKEN,
-      "7 days"
+      EXPIRES_IN_REFRESH_TOKEN
     );
 
     return {
@@ -138,7 +144,7 @@ class AuthService {
           name: newUser.fullName,
         },
         KEY_ACCESS_TOKEN,
-        "2 days"
+        EXPIRES_IN_ACCESS_TOKEN
       );
 
       const refreshToken = await generateToken(
@@ -148,7 +154,7 @@ class AuthService {
           name: newUser.fullName,
         },
         KEY_REFRESH_TOKEN,
-        "7 days"
+        EXPIRES_IN_REFRESH_TOKEN
       );
 
       return {
@@ -229,7 +235,7 @@ class AuthService {
         name,
       },
       KEY_ACCESS_TOKEN,
-      "2 days"
+      EXPIRES_IN_ACCESS_TOKEN
     );
 
     return {
